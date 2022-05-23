@@ -18,6 +18,28 @@
     });
   }
 
+  /* https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists */
+  function waitForElement(selector) {
+    return new Promise(resolve => {
+
+      if (document.querySelector(selector)) {
+        return resolve(document.querySelector(selector));
+      }
+
+      const observer = new MutationObserver(mutations => {
+        if (document.querySelector(selector)) {
+          resolve(document.querySelector(selector));
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    });
+  }
+
   async function copyExistingSignatures() {
 
     var output = "";
@@ -99,6 +121,33 @@
     }, 0);
   }
 
+  async function activateCorpMask(maskId) {
+    $("#settings").click();
+    const s = `input[name="mask"][type="radio"][value="${maskId}"]`;
+    const r = $(await waitForElement(s));
+    $(`label[for="${r.attr('id')}"]`).click();
+    $("#dialog-options").parent().find(".ui-dialog-buttonpane button:contains('Save')").click();
+  }
+
+  function disableFollow() {
+    $("#follow").removeClass("active");
+    options.buttons.follow = false;
+    options.save();
+  }
+
+  function disableAutoMapper() {
+    $("#toggle-automapper").removeClass("active");
+    options.buttons.signaturesWidget.autoMapper = false;
+    options.save();
+  }
+
+  function setSystem(system) {
+    var systemID = Object.index(tripwire.systems, "name", system, true) || false;
+    if (systemID !== false) {
+      tripwire.systemChange(systemID);
+    }
+  }
+
   const $ctrl = $("#signaturesWidget .controls");
 
   if (!$ctrl.find("#thera-copy").length) {
@@ -112,5 +161,10 @@
       .click(addNewSignature)
       .appendTo($ctrl);
   }
+
+  disableFollow();           /* Tripwire must not follow in-game system */
+  disableAutoMapper();       /* Tripwire must not automatically map jumps */
+  activateCorpMask("273.0"); /* EvE-Scout corpmask must be active */
+  setSystem("Thera");        /* Active system must be Thera */
 
 })();
