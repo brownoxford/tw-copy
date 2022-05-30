@@ -1,21 +1,68 @@
 (function () {
+  async function readSafariClipboardFileAsync(file) {
+    const tempReader = new FileReader();
 
-  async function readFromClipboard() {
-    const p = navigator.permissions.query({ name: "clipboard-read" });
-    return p.then((result) => {
-      if (result.state == "granted" || result.state == "prompt") {
-        return navigator.clipboard.readText();
-      }
+    return new Promise((resolve, reject) => {
+      tempReader.onerror = () => {
+        tempReader.abort();
+        reject('');
+      };
+
+      tempReader.onload = () => {
+        resolve(tempReader.result);
+      };
+
+      tempReader.readAsText(file);
     });
   }
 
-  async function writeToClipboard(text) {
-    const p = navigator.permissions.query({ name: "clipboard-write" });
-    return p.then((result) => {
-      if (result.state == "granted" || result.state == "prompt") {
-        navigator.clipboard.writeText(text);
+  async function readFromClipboard() {
+    if(typeof navigator.permissions !== 'undefined') {
+      const p = navigator.permissions.query({ name: "clipboard-read" });
+      return p.then((result) => {
+        if (result.state == "granted" || result.state == "prompt") {
+          return navigator.clipboard.readText();
+        }
+      });
+    } else {
+      /* No navigator.permissions object - we're in safari */
+      const items = await navigator.clipboard.read();
+
+      for(const item of items) {
+        if(!item.types.includes("text/plain")) {
+          continue;
+        }
+
+        return readSafariClipboardFileAsync(await item.getType("text/plain"));
+
+        /* Only process one valid clipboard item */
+        break;
       }
-    });
+
+      /*
+        If we get here user had only non-text items in their clipboard.
+        Gracefully bail with an empty string.
+      */
+      return '';
+    }
+  }
+
+  async function writeToClipboard(text) {
+    if(typeof navigator.permissions !== 'undefined') {
+      const p = navigator.permissions.query({ name: "clipboard-write" });
+      return p.then((result) => {
+        if (result.state == "granted" || result.state == "prompt") {
+          navigator.clipboard.writeText(text);
+        }
+      });
+    } else {
+      /* No navigator.permissions object - we're in safari */
+      navigator.clipboard.write([
+        new ClipboardItem({
+          "text/plain": Promise.resolve(text)
+        })
+      ]);
+    }
   }
 
   /* https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists */
