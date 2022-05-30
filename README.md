@@ -15,7 +15,7 @@ To get started, copy the following code to your clipboard by clicking on the cop
 
 ```javascript
 javascript:(function(){
-    $.getScript('https://cdn.jsdelivr.net/gh/brownoxford/tw-copy@v0.0.2/main.js')
+    $.getScript('https://cdn.jsdelivr.net/gh/brownoxford/tw-copy@v0.0.3/main.js')
 })();
 ```
 
